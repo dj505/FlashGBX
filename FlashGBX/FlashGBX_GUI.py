@@ -95,7 +95,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		rowActionsGeneral3.addWidget(self.btnRestoreRAM)
 
 		rowActionsGeneral4 = QtWidgets.QHBoxLayout()
-		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump ROM/SAV && Load In mGBA")
+		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump ROM/SAV && Load In &mGBA")
 		self.btnLoadInEmulator.setStyleSheet("min-height: 17px;")
 		self.connect(self.btnLoadInEmulator, QtCore.SIGNAL("clicked()"), self.LoadInEmu)
 		rowActionsGeneral4.addWidget(self.btnLoadInEmulator)
@@ -1399,7 +1399,6 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 
 		self.SETTINGS.setValue("bootDumpedROM", "True")
 
-		print(name)
 		if not os.path.isfile(f"./roms/{name}"):
 			self.BackupROM()
 		else:
