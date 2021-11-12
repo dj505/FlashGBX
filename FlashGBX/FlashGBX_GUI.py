@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # FlashGBX
 # Author: Lesserkuma (github.com/lesserkuma)
 
@@ -872,8 +871,6 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			if not dontShowAgain:
 				msgbox.exec()
 				dontShowAgain = cb.isChecked()
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				os.remove("./temp")
 
 		else:
 			self.lblStatus4a.setText("Ready.")
