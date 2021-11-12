@@ -15,6 +15,7 @@ for [Windows](https://github.com/lesserkuma/FlashGBX/releases), [Linux](https://
 - A flash chip query (including Common Flash Interface information) can be performed for flash cartridges
 - Decode and extract Game Boy Camera photos from save data
 - Update firmware of insideGadgets GBxCart RW v1.3 and v1.4 devices
+- Launch cartridges in an emulator in one click (requires mGBA to be installed, and for Windows users, added to the system PATH)
 
 ### Confirmed working reader/writer hardware and firmware versions
 
