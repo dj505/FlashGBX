@@ -1394,8 +1394,11 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 
 	def LoadInEmu(self):
 		dir = "./temp"
-		for f in os.listdir(dir):
-			os.remove(os.path.join(dir, f))
+		if os.path.exists(dir):
+			for f in os.listdir(dir):
+				os.remove(os.path.join(dir, f))
+		else:
+			os.makedirs("./temp")
 		self.SETTINGS.setValue("bootDumpedROM", "True")
 		self.BackupROM()
 

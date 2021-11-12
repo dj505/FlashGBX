@@ -1,7 +1,9 @@
 temp/
 __pycache__/
+*.pyc
 *.gba
 *.gb
 *.gbc
 *.sgb
 *.sav
+FlashGBX/config/settings.ini
