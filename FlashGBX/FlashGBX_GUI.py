@@ -1045,11 +1045,8 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			last_dir = self.SETTINGS.value(setting_name)
 			if last_dir is None: last_dir = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation)
 			path = self.lblHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = "ROM"
-			else:
-				if path == "" or path == "(No ROM data detected)": path = "ROM"
-				path = re.sub(r"[<>:\"/\\|\?\*]", "_", path)
+			if path == "" or path == "(No ROM data detected)": path = "ROM"
+			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path)
 			if self.CONN.INFO["cgb"] == 0xC0 or self.CONN.INFO["cgb"] == 0x80:
 				path = path + ".gbc"
 			elif self.CONN.INFO["sgb"] == 0x03:
@@ -1057,7 +1054,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			else:
 				path = path + ".gb"
 			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = f"./temp/{path}"
+				path = f"./roms/{path}"
 				self.SETTINGS.setValue("dumpedRomPath", path)
 			else:
 				path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup ROM", last_dir + "/" + path, "Game Boy ROM File (*.gb *.sgb *.gbc);;All Files (*.*)")[0]
@@ -1068,16 +1065,13 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			last_dir = self.SETTINGS.value(setting_name)
 			if last_dir is None: last_dir = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation)
 			path = self.lblAGBHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii') + "_" + self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = "ROM"
-			else:
-				if path == "_": path = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-				if path == "" or path.startswith("(No ROM data detected)"): path = "ROM"
-				path = re.sub(r"[<>:\"/\\|\?\*]", "_", path)
+			if path == "_": path = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if path == "" or path.startswith("(No ROM data detected)"): path = "ROM"
+			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path)
 			rom_size = Util.AGB_Header_ROM_Sizes_Map[self.cmbAGBHeaderROMSizeResult.currentIndex()]
 			path = path + ".gba"
 			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = f"./temp/{path}"
+				path = f"./roms/{path}"
 				self.SETTINGS.setValue("dumpedRomPath", path)
 			else:
 				path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup ROM", last_dir + "/" + path, "Game Boy Advance ROM File (*.gba *.srl);;All Files (*.*)")[0]
@@ -1242,11 +1236,8 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			setting_name = "LastDirSaveDataDMG"
 			last_dir = self.SETTINGS.value(setting_name)
 			if last_dir is None: last_dir = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation)
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = "ROM"
-			else:
-				path = self.lblHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-				if path == "" or path == "(No ROM data detected)": path = "ROM"
+			path = self.lblHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if path == "" or path == "(No ROM data detected)": path = "ROM"
 			mbc = (list(Util.DMG_Header_Mapper.items())[self.cmbHeaderFeaturesResult.currentIndex()])[0]
 			try:
 				features = list(Util.DMG_Header_Mapper.keys())[self.cmbHeaderFeaturesResult.currentIndex()]
@@ -1260,12 +1251,9 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			setting_name = "LastDirSaveDataAGB"
 			last_dir = self.SETTINGS.value(setting_name)
 			if last_dir is None: last_dir = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation)
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = "ROM"
-			else:
-				path = self.lblAGBHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii') + "_" + self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-				if path == "_": path = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
-				if path == "" or path.startswith("(No ROM data detected)"): path = "ROM"
+			path = self.lblAGBHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii') + "_" + self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if path == "_": path = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if path == "" or path.startswith("(No ROM data detected)"): path = "ROM"
 			mbc = 0
 			save_type = self.cmbAGBSaveTypeResult.currentIndex()
 			if save_type == 0:
@@ -1275,16 +1263,15 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			return
 
 		add_date_time = self.SETTINGS.value("SaveFileNameAddDateTime", default="disabled")
-		if self.SETTINGS.value("bootDumpedROM") == "True":
-			path += ".sav"
+		if add_date_time and add_date_time.lower() == "enabled" and self.SETTINGS.value("bootDumpedROM") != "True":
+			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".sav"
+		elif add_date_time and add_date_time.lower() == "enabled":
+			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + ".sav"
 		else:
-			if add_date_time and add_date_time.lower() == "enabled":
-				path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".sav"
-			else:
-				path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + ".sav"
+			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + ".sav" # Probably redundant but never hurts to be safe
 
 		if self.SETTINGS.value("bootDumpedROM") == "True":
-			path = f"./temp/{path}"
+			path = f"./roms/{path}"
 			self.SETTINGS.setValue("dumpedRamPath", path)
 		else:
 			path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup Save Data", last_dir + "/" + path, "Save Data File (*.sav);;All Files (*.*)")[0]
@@ -1390,14 +1377,33 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		self.grpStatus.setTitle("Transfer Status")
 
 	def LoadInEmu(self):
-		dir = "./temp"
-		if os.path.exists(dir):
-			for f in os.listdir(dir):
-				os.remove(os.path.join(dir, f))
-		else:
-			os.makedirs("./temp")
+		if self.CONN.GetMode() == "DMG":
+			name = self.lblHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if name == "" or name == "(No ROM data detected)": name = "ROM"
+			name = re.sub(r"[<>:\"/\\|\?\*]", "_", name)
+			if self.CONN.INFO["cgb"] == 0xC0 or self.CONN.INFO["cgb"] == 0x80:
+				name = name + ".gbc"
+			elif self.CONN.INFO["sgb"] == 0x03:
+				name = name + ".sgb"
+			else:
+				name = name + ".gb"
+		if self.CONN.GetMode() == "AGB":
+			name = self.lblAGBHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii') + "_" + self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if name == "_": name = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
+			if name == "" or name.startswith("(No ROM data detected)"): name = "ROM"
+			name = re.sub(r"[<>:\"/\\|\?\*]", "_", name)
+			name = name + ".gba"
+
+		if not os.path.exists("./roms"):
+			os.makedirs("./roms")
+
 		self.SETTINGS.setValue("bootDumpedROM", "True")
-		self.BackupROM()
+
+		print(name)
+		if not os.path.isfile(f"./roms/{name}"):
+			self.BackupROM()
+		else:
+			self.BackupRAM()
 
 	def CheckDeviceAlive(self, setMode=False):
 		if self.CONN is not None:
