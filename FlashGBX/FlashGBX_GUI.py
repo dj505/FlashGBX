@@ -95,7 +95,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		rowActionsGeneral3.addWidget(self.btnRestoreRAM)
 
 		rowActionsGeneral4 = QtWidgets.QHBoxLayout()
-		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump ROM/SAV && Load In &mGBA")
+		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump && Load In &mGBA")
 		self.btnLoadInEmulator.setStyleSheet("min-height: 17px;")
 		self.connect(self.btnLoadInEmulator, QtCore.SIGNAL("clicked()"), self.LoadInEmu)
 		rowActionsGeneral4.addWidget(self.btnLoadInEmulator)
@@ -855,7 +855,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 				gamepath = self.SETTINGS.value("dumpedRomPath")
 				savepath = self.SETTINGS.value("dumpedRamPath")
 				print(f"Booting {self.CONN.GetMode()} ROM in mGBA...")
-				emu = subprocess.run(["mgba", "-4", gamepath])
+				emu = self.StartEmu(gamepath)
 				print("mGBA closed. Restoring save...")
 				if os.path.isfile(savepath):
 					self.SETTINGS.setValue("bootDumpedROM", "False")
@@ -1384,30 +1384,41 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			if name == "" or name == "(No ROM data detected)": name = "ROM"
 			name = re.sub(r"[<>:\"/\\|\?\*]", "_", name)
 			if self.CONN.INFO["cgb"] == 0xC0 or self.CONN.INFO["cgb"] == 0x80:
-				name = name + ".gbc"
+				gamename = name + ".gbc"
 			elif self.CONN.INFO["sgb"] == 0x03:
-				name = name + ".sgb"
+				gamename = name + ".sgb"
 			else:
-				name = name + ".gb"
+				gamename = name + ".gb"
+			save_type = Util.DMG_Header_RAM_Sizes_Flasher_Map[self.cmbHeaderRAMSizeResult.currentIndex()]
+
 		if self.CONN.GetMode() == "AGB":
 			name = self.lblAGBHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii') + "_" + self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
 			if name == "_": name = self.lblAGBHeaderCodeResult.text().strip().encode('ascii', 'ignore').decode('ascii')
 			if name == "" or name.startswith("(No ROM data detected)"): name = "ROM"
 			name = re.sub(r"[<>:\"/\\|\?\*]", "_", name)
-			name = name + ".gba"
+			gamename = name + ".gba"
+			save_type = self.cmbAGBSaveTypeResult.currentIndex()
 
+		savename = name + ".sav"
 		if not os.path.exists("./roms"):
 			os.makedirs("./roms")
 
 		self.SETTINGS.setValue("bootDumpedROM", "True")
 
 		print(name)
-		path = f"./roms/{name}"
-		if not os.path.isfile(path):
+		gamepath = f"./roms/{gamename}"
+		savepath = f"./roms/{savename}"
+		if not os.path.isfile(gamepath):
 			self.BackupROM()
-		else:
-			self.SETTINGS.setValue("dumpedRomPath", path)
+		if save_type != 0:
+			self.SETTINGS.setValue("dumpedRomPath", gamepath)
 			self.BackupRAM()
+		else:
+			self.StartEmu(gamepath)
+			self.SETTINGS.setValue("bootDumpedROM", "False")
+
+	def StartEmu(self, path):
+		return subprocess.run(["mgba", "-4", path])
 
 	def CheckDeviceAlive(self, setMode=False):
 		if self.CONN is not None:
