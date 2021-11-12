@@ -197,6 +197,8 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		self.mnuConfig.addAction("Use &fast read mode", lambda: self.SETTINGS.setValue("FastReadMode", str(self.mnuConfig.actions()[4].isChecked()).lower().replace("true", "enabled").replace("false", "disabled"))) # GBxCart RW
 		self.mnuConfig.addSeparator()
 		self.mnuConfig.addAction("Show &configuration directory", self.OpenConfigDir)
+		self.mnuConfig.addSeparator()
+		self.mnuConfig.addAction("Choose &ROM cache directory (for emulation)", lambda: self.SetRomCacheDir())
 		self.mnuConfig.actions()[0].setCheckable(True)
 		self.mnuConfig.actions()[1].setCheckable(True)
 		self.mnuConfig.actions()[2].setCheckable(True)
@@ -808,6 +810,9 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 						QtWidgets.QMessageBox.warning(self, "{:s} {:s}".format(APPNAME, VERSION), "The ROM backup is complete.", QtWidgets.QMessageBox.Ok)
 					else:
 						QtWidgets.QMessageBox.warning(self, "{:s} {:s}".format(APPNAME, VERSION), "The ROM was dumped, but the checksum is not correct. This may indicate a bad dump, however this can be normal for some reproduction cartridges, prototypes, patched games and intentional overdumps.", QtWidgets.QMessageBox.Ok)
+
+				save_type = Util.DMG_Header_RAM_Sizes_Flasher_Map[self.cmbHeaderRAMSizeResult.currentIndex()]
+
 			elif self.CONN.GetMode() == "AGB":
 				if Util.AGB_Global_CRC32 == self.CONN.INFO["rom_checksum_calc"]:
 					self.lblAGBHeaderROMChecksumResult.setText("Valid (0x{:06X})".format(Util.AGB_Global_CRC32))
@@ -828,8 +833,17 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 					self.lblStatus4a.setText("Done.")
 					QtWidgets.QMessageBox.warning(self, "{:s} {:s}".format(APPNAME, VERSION), "The ROM backup is complete, but the checksum doesn’t match the known database entry. This may indicate a bad dump, however this can be normal for some reproduction cartridges, prototypes, patched games and intentional overdumps.", QtWidgets.QMessageBox.Ok)
 
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				self.BackupRAM()
+				save_type = self.cmbAGBSaveTypeResult.currentIndex()
+
+			if self.SETTINGS.value("BootDumpedROM") == "True":
+				if save_type != 0:
+					self.BackupRAM()
+				else:
+					gamepath = self.SETTINGS.value("DumpedRomPath")
+					print(f"Booting {self.CONN.GetMode()} ROM in mGBA...")
+					emu = self.StartEmu(gamepath)
+					print("mGBA closed.")
+					self.SETTINGS.setValue("BootDumpedROM", "False")
 
 		elif self.CONN.INFO["last_action"] == 2: # Backup RAM
 			self.lblStatus4a.setText("Done!")
@@ -851,14 +865,14 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 				msgbox.exec()
 				dontShowAgain = cb.isChecked()
 
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				gamepath = self.SETTINGS.value("dumpedRomPath")
-				savepath = self.SETTINGS.value("dumpedRamPath")
+			if self.SETTINGS.value("BootDumpedROM") == "True":
+				gamepath = self.SETTINGS.value("DumpedRomPath")
+				savepath = self.SETTINGS.value("DumpedRamPath")
 				print(f"Booting {self.CONN.GetMode()} ROM in mGBA...")
 				emu = self.StartEmu(gamepath)
 				print("mGBA closed. Restoring save...")
 				if os.path.isfile(savepath):
-					self.SETTINGS.setValue("bootDumpedROM", "False")
+					self.SETTINGS.setValue("BootDumpedROM", "False")
 					self.WriteRAM(savepath, erase=False)
 
 		elif self.CONN.INFO["last_action"] == 3: # Restore RAM
@@ -1055,9 +1069,9 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 				path = path + ".sgb"
 			else:
 				path = path + ".gb"
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = f"./roms/{path}"
-				self.SETTINGS.setValue("dumpedRomPath", path)
+			if self.SETTINGS.value("BootDumpedROM") == "True":
+				path = os.path.join(self.SETTINGS.value("RomCacheDir"), path)
+				self.SETTINGS.setValue("DumpedRomPath", path)
 			else:
 				path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup ROM", last_dir + "/" + path, "Game Boy ROM File (*.gb *.sgb *.gbc);;All Files (*.*)")[0]
 			cart_type = self.cmbDMGCartridgeTypeResult.currentIndex()
@@ -1072,9 +1086,9 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path)
 			rom_size = Util.AGB_Header_ROM_Sizes_Map[self.cmbAGBHeaderROMSizeResult.currentIndex()]
 			path = path + ".gba"
-			if self.SETTINGS.value("bootDumpedROM") == "True":
-				path = f"./roms/{path}"
-				self.SETTINGS.setValue("dumpedRomPath", path)
+			if self.SETTINGS.value("BootDumpedROM") == "True":
+				path = os.path.join(self.SETTINGS.value("RomCacheDir"), path)
+				self.SETTINGS.setValue("DumpedRomPath", path)
 			else:
 				path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup ROM", last_dir + "/" + path, "Game Boy Advance ROM File (*.gba *.srl);;All Files (*.*)")[0]
 			cart_type = self.cmbAGBCartridgeTypeResult.currentIndex()
@@ -1265,16 +1279,16 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			return
 
 		add_date_time = self.SETTINGS.value("SaveFileNameAddDateTime", default="disabled")
-		if add_date_time and add_date_time.lower() == "enabled" and self.SETTINGS.value("bootDumpedROM") != "True":
+		if add_date_time and add_date_time.lower() == "enabled" and self.SETTINGS.value("BootDumpedROM") != "True":
 			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".sav"
 		elif add_date_time and add_date_time.lower() == "enabled":
 			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + ".sav"
 		else:
 			path = re.sub(r"[<>:\"/\\|\?\*]", "_", path) + ".sav" # Probably redundant but never hurts to be safe
 
-		if self.SETTINGS.value("bootDumpedROM") == "True":
-			path = f"./roms/{path}"
-			self.SETTINGS.setValue("dumpedRamPath", path)
+		if self.SETTINGS.value("BootDumpedROM") == "True":
+			path = os.path.join(self.SETTINGS.value("RomCacheDir"), path)
+			self.SETTINGS.setValue("DumpedRamPath", path)
 		else:
 			path = QtWidgets.QFileDialog.getSaveFileName(self, "Backup Save Data", last_dir + "/" + path, "Save Data File (*.sav);;All Files (*.*)")[0]
 		if (path == ""): return
@@ -1379,6 +1393,16 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		self.grpStatus.setTitle("Transfer Status")
 
 	def LoadInEmu(self):
+
+		if self.SETTINGS.value("RomCacheDir") == None:
+			msgbox = QtWidgets.QMessageBox(parent=self, icon=QtWidgets.QMessageBox.Question, windowTitle="{:s} {:s}".format(APPNAME, VERSION), text="It looks like you haven't picked a directory to cache ROMs dumped using this method. Select one now?", standardButtons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+			msgbox.setDefaultButton(QtWidgets.QMessageBox.Yes)
+			answer = msgbox.exec()
+			if answer == QtWidgets.QMessageBox.No:
+				return
+			elif answer == QtWidgets.QMessageBox.Yes:
+				self.SetRomCacheDir()
+
 		if self.CONN.GetMode() == "DMG":
 			name = self.lblHeaderTitleResult.text().strip().encode('ascii', 'ignore').decode('ascii')
 			if name == "" or name == "(No ROM data detected)": name = "ROM"
@@ -1400,22 +1424,20 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			save_type = self.cmbAGBSaveTypeResult.currentIndex()
 
 		savename = name + ".sav"
-		if not os.path.exists("./roms"):
-			os.makedirs("./roms")
 
-		self.SETTINGS.setValue("bootDumpedROM", "True")
+		self.SETTINGS.setValue("BootDumpedROM", "True")
 
-		print(name)
-		gamepath = f"./roms/{gamename}"
-		savepath = f"./roms/{savename}"
+		gamepath = os.path.join(self.SETTINGS.value("RomCacheDir"), gamename)
+		savepath = os.path.join(self.SETTINGS.value("RomCacheDir"), savename)
 		if not os.path.isfile(gamepath):
+			print("Performing first time backup...")
 			self.BackupROM()
-		if save_type != 0:
-			self.SETTINGS.setValue("dumpedRomPath", gamepath)
+		elif save_type != 0:
+			self.SETTINGS.setValue("DumpedRomPath", gamepath)
 			self.BackupRAM()
 		else:
 			self.StartEmu(gamepath)
-			self.SETTINGS.setValue("bootDumpedROM", "False")
+			self.SETTINGS.setValue("BootDumpedROM", "False")
 
 	def StartEmu(self, path):
 		return subprocess.run(["mgba", "-4", path])
@@ -1886,6 +1908,10 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		self.CAMWIN.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 		self.CAMWIN.setModal(True)
 		self.CAMWIN.run()
+
+	def SetRomCacheDir(self):
+		path = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Folder")
+		self.SETTINGS.setValue("RomCacheDir", path)
 
 	def dragEnterEvent(self, e):
 		if self._dragEventHover(e):
