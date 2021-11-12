@@ -1,0 +1,7 @@
+temp/
+__pycache__/
+*.gba
+*.gb
+*.gbc
+*.sgb
+*.sav

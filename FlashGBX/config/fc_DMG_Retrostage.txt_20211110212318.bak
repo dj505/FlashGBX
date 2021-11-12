@@ -1,0 +1,10 @@
+{
+	"type":"DMG",
+	"names":[
+		"Retrostage GameBoy Blaster"
+	],
+	"voltage":5,
+	"write_pin":"",
+	"command_set":"",
+	"commands":{}
+}
