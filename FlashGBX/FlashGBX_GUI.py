@@ -857,7 +857,9 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 				print(f"Booting {self.CONN.GetMode()} ROM in mGBA...")
 				emu = subprocess.run(["mgba", "-4", gamepath])
 				print("mGBA closed. Restoring save...")
-				self.WriteRAM(savepath, erase=False)
+				if os.path.isfile(savepath):
+					self.SETTINGS.setValue("bootDumpedROM", "False")
+					self.WriteRAM(savepath, erase=False)
 
 		elif self.CONN.INFO["last_action"] == 3: # Restore RAM
 			self.lblStatus4a.setText("Done!")
@@ -1399,9 +1401,12 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 
 		self.SETTINGS.setValue("bootDumpedROM", "True")
 
-		if not os.path.isfile(f"./roms/{name}"):
+		print(name)
+		path = f"./roms/{name}"
+		if not os.path.isfile(path):
 			self.BackupROM()
 		else:
+			self.SETTINGS.setValue("dumpedRomPath", path)
 			self.BackupRAM()
 
 	def CheckDeviceAlive(self, setMode=False):
