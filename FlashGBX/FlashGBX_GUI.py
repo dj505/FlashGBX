@@ -95,7 +95,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		rowActionsGeneral3.addWidget(self.btnRestoreRAM)
 
 		rowActionsGeneral4 = QtWidgets.QHBoxLayout()
-		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump && Load In &mGBA")
+		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump && Load In E&mulator")
 		self.btnLoadInEmulator.setStyleSheet("min-height: 17px;")
 		self.connect(self.btnLoadInEmulator, QtCore.SIGNAL("clicked()"), self.LoadInEmu)
 		rowActionsGeneral4.addWidget(self.btnLoadInEmulator)
@@ -198,7 +198,8 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		self.mnuConfig.addSeparator()
 		self.mnuConfig.addAction("Show &configuration directory", self.OpenConfigDir)
 		self.mnuConfig.addSeparator()
-		self.mnuConfig.addAction("Choose &ROM cache directory (for emulation)", lambda: self.SetRomCacheDir())
+		self.mnuConfig.addAction("Choose emulator &ROM cache directory", lambda: self.SetRomCacheDir())
+		self.mnuConfig.addAction("Configure emulator &launch command", lambda: self.EmuCommandBox())
 		self.mnuConfig.actions()[0].setCheckable(True)
 		self.mnuConfig.actions()[1].setCheckable(True)
 		self.mnuConfig.actions()[2].setCheckable(True)
@@ -1440,7 +1441,13 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 			self.SETTINGS.setValue("BootDumpedROM", "False")
 
 	def StartEmu(self, path):
-		return subprocess.run(["mgba", "-4", path])
+		cmd = self.SETTINGS.value("EmuLaunchCommand")
+		if cmd == None:
+			return subprocess.run(["mgba", "-f", path])
+		else:
+			cmd = cmd.split(" ")
+			cmd = [i.replace("#path", path) for i in cmd]
+			return subprocess.run(cmd)
 
 	def CheckDeviceAlive(self, setMode=False):
 		if self.CONN is not None:
@@ -1912,6 +1919,41 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 	def SetRomCacheDir(self):
 		path = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Folder")
 		self.SETTINGS.setValue("RomCacheDir", path)
+
+	def SetEmuLaunchCommand(self, cmd, msgbox):
+		if cmd == "":
+			self.SETTINGS.setValue("EmuLaunchCommand", "mgba -f #path")
+			print("Using default launch command.")
+		else:
+			self.SETTINGS.setValue("EmuLaunchCommand", cmd)
+			print(f"Emulator launch command set to: {cmd}")
+		msgbox.close()
+
+	def EmuCommandBox(self):
+		msgbox = QtWidgets.QDialog(parent=self, windowTitle="Define Emulator Launch Command")
+		msgbox.setMinimumSize(QtCore.QSize(480, 100))
+
+		msgbox.lineLabel = QtWidgets.QLabel(msgbox)
+		msgbox.lineLabel.setText("Command:")
+		msgbox.lineLabel.move(10, 28)
+
+		msgbox.line = QtWidgets.QLineEdit(msgbox)
+		msgbox.line.setPlaceholderText("mgba -f #path")
+		msgbox.line.move(80, 20)
+		msgbox.line.resize(400, 32)
+
+		msgbox.infoLabel = QtWidgets.QLabel(msgbox)
+		msgbox.infoLabel.setText("Hint: '#path' represents the path used for loading the dumped ROM.\n" \
+		 						 "Do not manually enter a path, instead use '#path' where the path\n" \
+								 "should be specified in the command.")
+		msgbox.infoLabel.move(80, 60)
+
+		button = QtWidgets.QPushButton("OK", msgbox)
+		button.clicked.connect(lambda: self.SetEmuLaunchCommand(msgbox.line.text(), msgbox))
+		button.move(16, 65)
+		button.resize(50, 40)
+
+		msgbox.exec()
 
 	def dragEnterEvent(self, e):
 		if self._dragEventHover(e):
