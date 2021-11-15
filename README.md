@@ -192,7 +192,7 @@ Use this command in a Terminal or Command Prompt window to launch the installed 
 
 *To run FlashGBX in portable mode without installing, you can also download the source code archive and call `python3 run.py` after installing the prerequisites yourself.*
 
-#### Emulation Setup
+### Emulation Setup
 For a basic first time setup, you'll need to configure a couple things - don't worry, this should only need to be done once, and it can be reconfigured later on.
 
 1. Click on the "Config" dropdown and select "Choose emulator ROM cache directory"
