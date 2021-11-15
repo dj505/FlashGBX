@@ -15,7 +15,7 @@ for [Windows](https://github.com/lesserkuma/FlashGBX/releases), [Linux](https://
 - A flash chip query (including Common Flash Interface information) can be performed for flash cartridges
 - Decode and extract Game Boy Camera photos from save data
 - Update firmware of insideGadgets GBxCart RW v1.3 and v1.4 devices
-- Launch cartridges in an emulator in one click (requires mGBA to be installed, and for Windows users, added to the system PATH)
+- Launch cartridges in an emulator in one click (after initial setup - see instructions)
 
 ### Confirmed working reader/writer hardware and firmware versions
 
@@ -191,6 +191,17 @@ Use this command in a Terminal or Command Prompt window to launch the installed 
 `python3 -m FlashGBX`
 
 *To run FlashGBX in portable mode without installing, you can also download the source code archive and call `python3 run.py` after installing the prerequisites yourself.*
+
+#### Emulation Setup
+For a basic first time setup, you'll need to configure a couple things - don't worry, this should only need to be done once, and it can be reconfigured later on.
+
+1. Click on the "Config" dropdown and select "Choose emulator ROM cache directory"
+  - This will open a file browser you use to select the location that dumped ROMs will be stored when using the "Dump & Load In Emulator" option. Storing them this way ensures you don't need to wait for the ROM to be fully redumped every time you click the button, which saves a lot of time, especially for much larger games.
+2. Also from the "Config" dropdown, select "Choose emulator launch command"
+  - This is the command that will be used to launch the emulator, including any command line arguments you may want to add. By default, when selecting "Dump & Load In Emulator" it will attempt to launch mGBA in full screen mode, which won't work if you don't have mGBA installed (and added to your system PATH). You can use any emulator you want, but mGBA will be used as an example here.
+    - The `#path` text serves will be automatically replaced with the location of the dumped ROM when the program is run, so instead of manually specifying a path, make sure you just use `#path`!
+    - For Windows users, this would look something like `C:\Program Files\mGBA\mgba.exe -f #path`.
+    - For Mac/Linux users, you could specify the name of a package installed through a package manager such as `mgba -f #path`, or you can specify the full path to an executable.
 
 ### Troubleshooting
 
