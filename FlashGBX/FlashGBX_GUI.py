@@ -102,7 +102,7 @@ class FlashGBX_GUI(QtWidgets.QWidget):
 		rowActionsGeneral3.addWidget(self.btnRestoreRAM)
 
 		rowActionsGeneral4 = QtWidgets.QHBoxLayout()
-		self.btnLoadInEmulator = QtWidgets.QPushButton("Dump && Load In E&mulator")
+		self.btnLoadInEmulator = QtWidgets.QPushButton("Launch In E&mulator")
 		self.btnLoadInEmulator.setStyleSheet("min-height: 17px;")
 		self.connect(self.btnLoadInEmulator, QtCore.SIGNAL("clicked()"), self.LoadInEmu)
 		rowActionsGeneral4.addWidget(self.btnLoadInEmulator)
